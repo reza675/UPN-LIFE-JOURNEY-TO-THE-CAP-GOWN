@@ -1,0 +1,17 @@
+# ===== Rojo / Roblox build output =====
+game.rbxlx
+game.rbxlx.lock
+
+# Jangan track file place/model binary Roblox (generate / backup saja)
+*.rbxl
+*.rbxlx
+
+# Kalau nanti punya map backup .rbxm dan mau di-track, bisa whitelist:
+# !map/upn_map.rbxm
+
+# ===== VSCode =====
+.vscode/
+
+# ===== OS junk files =====
+.DS_Store
+Thumbs.db
