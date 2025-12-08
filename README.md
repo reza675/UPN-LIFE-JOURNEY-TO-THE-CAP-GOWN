@@ -24,14 +24,4 @@ Project ini menggunakan:
 
 ## 🗂️ Project Structure (Rojo)
 
-UPN-LIFE-JOURNEY/
-├── src/
-│ ├── ServerScriptService/
-│ │ └── Main.server.lua
-│ ├── ReplicatedStorage/
-│ │ └── Modules/
-│ │ ├── PlayerData.lua
-│ │ └── QuestSystem.lua
-├── default.project.json
-├── .gitignore
-└── README.md
+https://drive.google.com/drive/folders/12sArdugbDxo7rC_q0cXPq3T4GIsawR1i?usp=sharing
