@@ -27,7 +27,6 @@ QS.CompleteQuest(p, "Bab1_Intro_PKKBN") -- Complete quest
 CM.Play(p, "Intro")                     -- Play cutscene
 SM.TriggerEnding(p)                     -- Trigger ending
 ```
-
 #### Client Console
 ```lua
 -- Test minigame
