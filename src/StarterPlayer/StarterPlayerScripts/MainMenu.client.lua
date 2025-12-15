@@ -11,9 +11,12 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- RemoteEvent untuk komunikasi dengan server
-local MainMenuRemote = Instance.new("RemoteEvent")
-MainMenuRemote.Name = "MainMenuRemote"
-MainMenuRemote.Parent = ReplicatedStorage
+local MainMenuRemote = ReplicatedStorage:WaitForChild("MainMenuRemote", 10)
+
+if not MainMenuRemote then
+	warn("❌ MainMenuRemote not found!")
+	return
+end
 
 local hasShownMenu = false
 

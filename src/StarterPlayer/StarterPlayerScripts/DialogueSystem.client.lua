@@ -1,7 +1,5 @@
---[[
-	Dialogue System Client
-	Fungsi: Menampilkan dialog NPC di layar pemain
-]]
+-- DialogueSystem Client - ENABLED
+warn("🔥🔥🔥 DIALOGUESYSTEM STARTING 🔥🔥🔥")
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,11 +8,25 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+print("👤 [CLIENT] Player:", player.Name)
+print("🖥️ [CLIENT] PlayerGui:", playerGui)
+
 -- RemoteEvents
-local DialogueRemote = ReplicatedStorage:WaitForChild("DialogueRemote")
-local QuestRemote = Instance.new("RemoteEvent")
-QuestRemote.Name = "QuestRemote"
-QuestRemote.Parent = ReplicatedStorage
+print("🔗 [CLIENT] Waiting for DialogueRemote...")
+local DialogueRemote = ReplicatedStorage:WaitForChild("DialogueRemote", 10)
+
+if not DialogueRemote then
+	warn("❌ [CLIENT] DialogueRemote tidak ditemukan!")
+	return
+end
+
+print("✅ [CLIENT] DialogueRemote found:", DialogueRemote)
+
+local QuestRemote = ReplicatedStorage:WaitForChild("QuestRemote", 10)
+
+if not QuestRemote then
+	warn("❌ QuestRemote not found!")
+end
 
 -- State
 local currentDialogue = nil
@@ -131,14 +143,19 @@ end
 
 -- Hide dialogue dengan animasi
 local function hideDialogueUI(dialogueUI)
+	isDialogueActive = false
+	
 	local container = dialogueUI.Container
 	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 	local tween = TweenService:Create(container, tweenInfo, {
 		Position = UDim2.new(0.1, 0, 1, 0)
 	})
+	
+	tween.Completed:Connect(function()
+		dialogueUI:Destroy()
+	end)
+	
 	tween:Play()
-	task.wait(0.3)
-	isDialogueActive = false
 end
 
 -- Update dialogue text
@@ -150,7 +167,10 @@ local function updateDialogue(dialogueUI, npcData, index)
 	
 	container.NameLabel.Text = npcData.NPCName
 	container.RoleLabel.Text = npcData.Role
-	container.DialogueText.Text = dialogue.Text
+	
+	-- Support both string and table format
+	local dialogueText = type(dialogue) == "string" and dialogue or dialogue.Text
+	container.DialogueText.Text = dialogueText or "..."
 	
 	container.ChoiceContainer.Visible = false
 	container.ContinueButton.Visible = true
@@ -193,15 +213,23 @@ end
 
 -- Main dialogue handler
 local function handleDialogue(npcData)
+	print("🎬 [CLIENT] handleDialogue dipanggil")
+	
 	local dialogueUI = playerGui:FindFirstChild("DialogueUI")
 	if not dialogueUI then
+		print("🎨 [CLIENT] Membuat DialogueUI baru...")
 		dialogueUI = createDialogueUI()
+	else
+		print("✅ [CLIENT] DialogueUI sudah ada")
 	end
 	
 	currentDialogue = npcData
 	currentDialogueIndex = 1
 	
+	print("📝 [CLIENT] Update dialogue index 1")
 	updateDialogue(dialogueUI, npcData, currentDialogueIndex)
+	
+	print("📺 [CLIENT] Show dialogue UI")
 	showDialogueUI(dialogueUI)
 	
 	-- Continue button handler
@@ -215,15 +243,30 @@ local function handleDialogue(npcData)
 		if currentDialogueIndex <= #npcData.Dialogues then
 			updateDialogue(dialogueUI, npcData, currentDialogueIndex)
 		else
-			hideDialogueUI(dialogueUI)
+			-- Dialog selesai
 			connection:Disconnect()
+			hideDialogueUI(dialogueUI)
+			currentDialogue = nil
+			currentDialogueIndex = 1
 		end
 	end)
 end
 
 -- Listen untuk dialogue dari server
 DialogueRemote.OnClientEvent:Connect(function(npcData)
-	handleDialogue(npcData)
+	print("📩 [CLIENT] Menerima dialogue data dari server:")
+	print("  - NPC Name:", npcData.NPCName)
+	print("  - Role:", npcData.Role)
+	print("  - Dialogues count:", npcData.Dialogues and #npcData.Dialogues or "nil")
+	print("  - Dialogues type:", type(npcData.Dialogues))
+	
+	local success, err = pcall(function()
+		handleDialogue(npcData)
+	end)
+	
+	if not success then
+		warn("❌ Error saat handle dialogue:", err)
+	end
 end)
 
 -- Keyboard shortcut (SPACE untuk continue)

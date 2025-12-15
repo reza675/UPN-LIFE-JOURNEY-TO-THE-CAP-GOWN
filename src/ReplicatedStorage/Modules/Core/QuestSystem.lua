@@ -55,11 +55,24 @@ end
 
 -- Update objective untuk quest
 function QuestSystem.UpdateObjective(player, questId, objectiveIndex)
+	-- Initialize activeQuests for player if not exists
+	if not activeQuests[player.UserId] then
+		activeQuests[player.UserId] = {}
+	end
+	
 	local playerQuests = activeQuests[player.UserId]
 	
-	if not playerQuests or not playerQuests[questId] then
-		warn("⚠️ Quest tidak ditemukan: " .. questId)
-		return false
+	-- If quest not in activeQuests, try to load from PlayerData
+	if not playerQuests[questId] then
+		local data = PlayerData.Get(player)
+		if data and data.ActiveQuests and data.ActiveQuests[questId] then
+			-- Restore quest to activeQuests from PlayerData
+			playerQuests[questId] = data.ActiveQuests[questId]
+			print("🔄 Restored quest from PlayerData: " .. questId)
+		else
+			warn("⚠️ Quest tidak ditemukan: " .. questId)
+			return false
+		end
 	end
 	
 	local quest = playerQuests[questId]
@@ -72,6 +85,12 @@ function QuestSystem.UpdateObjective(player, questId, objectiveIndex)
 	quest.CurrentObjective = objectiveIndex + 1
 	
 	print("✅ Objective " .. objectiveIndex .. " selesai untuk quest: " .. questId)
+	
+	-- Update PlayerData as well
+	local data = PlayerData.Get(player)
+	if data and data.ActiveQuests then
+		data.ActiveQuests[questId] = quest
+	end
 	
 	-- Fire event ke client untuk update UI
 	local QuestRemote = game:GetService("ReplicatedStorage"):FindFirstChild("QuestRemote")

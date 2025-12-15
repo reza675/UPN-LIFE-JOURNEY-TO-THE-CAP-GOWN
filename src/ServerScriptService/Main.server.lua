@@ -2,8 +2,32 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
--- modul Core
-local CoreModules = ReplicatedStorage.Modules.Core
+-- [[ 🛠️ BAGIAN AUTO-FIX: MEMAKSA REMOTE EVENT MUNCUL 🛠️ ]] --
+-- Kode ini akan mengecek apakah RemoteEvent ada. Kalau tidak ada, dia buatkan otomatis.
+local function ensureRemote(name, typeName)
+	typeName = typeName or "RemoteEvent"
+	if not ReplicatedStorage:FindFirstChild(name) then
+		local remote = Instance.new(typeName)
+		remote.Name = name
+		remote.Parent = ReplicatedStorage
+		print("✅ EMERGENCY FIX: Berhasil membuat " .. name)
+	end
+end
+
+-- Kita paksa buat semua remote yang dibutuhkan script kamu
+ensureRemote("MinigameRemote", "RemoteEvent")
+ensureRemote("MainMenuRemote", "RemoteEvent")
+ensureRemote("QuestRemote", "RemoteEvent")
+ensureRemote("DialogueRemote", "RemoteEvent")
+ensureRemote("CutsceneRemote", "RemoteEvent")
+ensureRemote("FeedbackRemote", "RemoteEvent")
+ensureRemote("EndingRemote", "RemoteEvent")
+ensureRemote("CheckSaveRemote", "RemoteFunction") 
+-- [[ 🏁 SELESAI AUTO-FIX 🏁 ]] --
+
+
+-- === KODE ASLI MAIN.SERVER.LUA KAMU DI BAWAH INI ===
+local CoreModules = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Core")
 local PlayerData = require(CoreModules.PlayerData)
 local QuestSystem = require(CoreModules.QuestSystem)
 local WeatherSystem = require(CoreModules.WeatherSystem)
@@ -15,10 +39,9 @@ print("=" .. string.rep("=", 50))
 print("🎮 UPN LIFE JOURNEY - SERVER INITIALIZING")
 print("=" .. string.rep("=", 50))
 
--- Inisialisasi sistem cuaca dan musik saat server start
 print("🌍 Menginisialisasi Weather System...")
 WeatherSystem.SetWeather("PagiCerah", true)
-WeatherSystem.StartDayNightCycle(2) -- 2x speed untuk testing
+WeatherSystem.StartDayNightCycle(2)
 WeatherSystem.StartRandomWeatherEvents()
 
 print("🎵 Menginisialisasi Music System...")
@@ -28,26 +51,17 @@ print("🔊 Menginisialisasi Ambient Sound...")
 AmbientSound.PlayAmbient("Campus_Outdoor")
 
 print("✅ Semua sistem core berhasil diinisialisasi!")
-print("⏳ Menunggu player...")
-print("=" .. string.rep("=", 50))
 
 Players.PlayerAdded:Connect(function(player)
 	print("👤 Player joined: " .. player.Name)
-	
-	-- load data pemain saat join
 	PlayerData.Init(player)
-	
-	-- Tidak auto-start quest lagi, tunggu dari Main Menu
-	-- Quest akan dimulai setelah player memilih di Main Menu
 end)
 
--- save data saat pemain keluar
 Players.PlayerRemoving:Connect(function(player)
 	print("👋 Player leaving: " .. player.Name)
-	PlayerData.Remove(player) -- Sudah include auto-save
+	PlayerData.Remove(player)
 end)
 
--- Auto-check graduation condition setiap 60 detik
 task.spawn(function()
 	while true do
 		task.wait(60)
@@ -61,4 +75,3 @@ task.spawn(function()
 end)
 
 print("🚀 Server siap! All systems operational.")
-

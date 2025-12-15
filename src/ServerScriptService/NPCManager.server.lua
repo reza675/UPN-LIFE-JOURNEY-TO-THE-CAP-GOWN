@@ -1,16 +1,36 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
--- Load semua modul NPC
-local NPCModules = ReplicatedStorage.Modules.NPC
-local NPCList = {
-	Bayu = require(NPCModules.Bayu),
-	BuRatna = require(NPCModules.BuRatna),
-	Citra = require(NPCModules.Citra),
-	Kirana = require(NPCModules.Kirana),
-	PakBambang = require(NPCModules.PakBambang),
-	PakEdo = require(NPCModules.PakEdo)
-}
+print("🚀 NPCManager starting...")
+
+-- Load semua modul NPC dengan error handling
+local NPCModules = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("NPC")
+local NPCList = {}
+
+local npcNames = {"Bayu", "BuRatna", "Citra", "Kirana", "PakBambang", "PakEdo"}
+
+for _, npcName in ipairs(npcNames) do
+	local success, result = pcall(function()
+		local npcModule = NPCModules:FindFirstChild(npcName)
+		if npcModule then
+			return require(npcModule)
+		else
+			warn("⚠️ Module tidak ditemukan: " .. npcName)
+			return nil
+		end
+	end)
+	
+	if success and result then
+		NPCList[npcName] = result
+		print("✅ Module loaded: " .. npcName)
+	else
+		warn("❌ Error loading module " .. npcName .. ": " .. tostring(result))
+	end
+end
+
+local count = 0
+for _ in pairs(NPCList) do count = count + 1 end
+print("📦 Total NPC modules loaded: " .. count)
 
 -- RemoteEvent untuk komunikasi dengan Client
 local DialogueRemote = Instance.new("RemoteEvent")
@@ -18,23 +38,28 @@ DialogueRemote.Name = "DialogueRemote"
 DialogueRemote.Parent = ReplicatedStorage
 
 -- Setup ProximityPrompt untuk satu NPC
-local function setupNPC(npcModel, npcData)
+local function setupNPC(npcModel, npcData, npcName)
 	if not npcModel or not npcModel:IsA("Model") then
-		warn("⚠️ Model NPC tidak ditemukan: " .. tostring(npcData.Name))
+		warn("⚠️ Model NPC tidak ditemukan: " .. npcName)
 		return
 	end
 	
-	local rootPart = npcModel:FindFirstChild("HumanoidRootPart") or npcModel.PrimaryPart
+	local rootPart = npcModel:FindFirstChild("HumanoidRootPart") or npcModel:FindFirstChild("Head") or npcModel.PrimaryPart
 	if not rootPart then
-		warn("⚠️ NPC tidak memiliki HumanoidRootPart: " .. npcData.Name)
+		warn("⚠️ NPC tidak memiliki HumanoidRootPart: " .. npcName)
 		return
 	end
+	
+	-- Get NPC info (support both Info.Name and direct Name)
+	local npcInfo = npcData.Info or npcData
+	local displayName = npcInfo.Name or npcName
+	local role = npcInfo.Role or "NPC"
 	
 	-- Buat ProximityPrompt
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "TalkPrompt"
-	prompt.ActionText = "Bicara dengan " .. npcData.Name
-	prompt.ObjectText = npcData.Role
+	prompt.ActionText = "Bicara dengan " .. displayName
+	prompt.ObjectText = role
 	prompt.MaxActivationDistance = 8
 	prompt.HoldDuration = 0.5
 	prompt.RequiresLineOfSight = false
@@ -42,18 +67,42 @@ local function setupNPC(npcModel, npcData)
 	
 	-- Event saat player berinteraksi
 	prompt.Triggered:Connect(function(player)
-		print("🗨️ Player " .. player.Name .. " berbicara dengan " .. npcData.Name)
+		print("🗨️ Player " .. player.Name .. " berbicara dengan " .. displayName)
+		
+		-- Tentukan dialogue category berdasarkan relationship (untuk sekarang pakai FirstMeet atau random)
+		local PlayerData = require(ReplicatedStorage.Modules.Core.PlayerData)
+		local data = PlayerData.Get(player)
+		
+		local dialogueCategory = "FirstMeet"
+		if data and data.NPCRelationships and data.NPCRelationships[npcName] then
+			local relationship = data.NPCRelationships[npcName]
+			if relationship >= 75 then
+				dialogueCategory = "Close"
+			elseif relationship >= 50 then
+				dialogueCategory = "Friendly"
+			elseif relationship >= 25 then
+				dialogueCategory = "Casual"
+			end
+		end
+		
+		-- Pilih dialogue yang tepat
+		local dialogues = npcData.Dialogues[dialogueCategory] or npcData.Dialogues.FirstMeet or npcData.Dialogues
+		
+		-- Jika dialogues masih table dengan categories, ambil FirstMeet
+		if type(dialogues[1]) == "table" and dialogues[1].FirstMeet then
+			dialogues = dialogues[1].FirstMeet
+		end
 		
 		-- Kirim data dialog ke Client
 		DialogueRemote:FireClient(player, {
-			NPCName = npcData.Name,
-			Role = npcData.Role,
-			Dialogues = npcData.Dialogues,
-			NPCId = npcData.NPCId
+			NPCName = displayName,
+			Role = role,
+			Dialogues = dialogues,
+			NPCId = npcName
 		})
 	end)
 	
-	print("✅ NPC Setup: " .. npcData.Name)
+	print("✅ NPC Setup: " .. displayName)
 end
 
 -- Scan Workspace untuk mencari NPC berdasarkan nama
@@ -71,7 +120,7 @@ local function initializeNPCs()
 	for npcName, npcData in pairs(NPCList) do
 		local npcModel = npcFolder:FindFirstChild(npcName)
 		if npcModel then
-			setupNPC(npcModel, npcData)
+			setupNPC(npcModel, npcData, npcName)
 		else
 			warn("⚠️ Model NPC tidak ditemukan di Workspace: " .. npcName)
 		end

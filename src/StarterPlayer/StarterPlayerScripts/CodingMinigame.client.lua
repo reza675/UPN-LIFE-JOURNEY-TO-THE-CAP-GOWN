@@ -71,9 +71,10 @@ local totalCorrect = 0
 -- RemoteEvent
 local MinigameRemote = ReplicatedStorage:FindFirstChild("MinigameRemote")
 if not MinigameRemote then
-	MinigameRemote = Instance.new("RemoteEvent")
-	MinigameRemote.Name = "MinigameRemote"
-	MinigameRemote.Parent = ReplicatedStorage
+	MinigameRemote = ReplicatedStorage:WaitForChild("MinigameRemote", 10)
+	if not MinigameRemote then
+		warn("❌ MinigameRemote not found!")
+	end
 end
 
 -- Create Coding Minigame UI

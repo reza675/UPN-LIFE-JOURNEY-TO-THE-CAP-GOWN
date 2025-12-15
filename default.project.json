@@ -8,7 +8,29 @@
     },
 
     "ReplicatedStorage": {
-      "$path": "src/ReplicatedStorage"
+      "$path": "src/ReplicatedStorage",
+      
+      "MinigameRemote": {
+        "$className": "RemoteEvent"
+      },
+      "MainMenuRemote": {
+        "$className": "RemoteEvent"
+      },
+      "QuestRemote": {
+        "$className": "RemoteEvent"
+      },
+      "DialogueRemote": {
+        "$className": "RemoteEvent"
+      },
+      "CutsceneRemote": {
+        "$className": "RemoteEvent"
+      },
+      "FeedbackRemote": {
+        "$className": "RemoteEvent"
+      },
+      "EndingRemote": {
+        "$className": "RemoteEvent"
+      }
     },
 
     "StarterPlayer": {
