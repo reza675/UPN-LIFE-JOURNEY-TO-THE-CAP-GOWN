@@ -12,7 +12,12 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- RemoteEvent
-local QuestRemote = ReplicatedStorage:WaitForChild("QuestRemote")
+local QuestRemote = ReplicatedStorage:WaitForChild("QuestRemote", 10)
+
+if not QuestRemote then
+	warn("❌ QuestRemote not found in QuestInventoryUI!")
+	return
+end
 
 -- State
 local isQuestLogOpen = false
@@ -281,15 +286,15 @@ local function toggleQuestLog()
 			questLogUI.Enabled = false
 			isQuestLogOpen = false
 		end)
-		
-		-- Request data dari server
-		QuestRemote:FireServer("GetActiveQuests")
 	end
 	
 	isQuestLogOpen = not isQuestLogOpen
 	questLogUI.Enabled = isQuestLogOpen
 	
 	if isQuestLogOpen then
+		-- Request data dari server setiap kali buka
+		QuestRemote:FireServer("GetActiveQuests")
+		
 		local scrollFrame = questLogUI.MainFrame:FindFirstChildOfClass("ScrollingFrame")
 		updateQuestLog(scrollFrame)
 	end

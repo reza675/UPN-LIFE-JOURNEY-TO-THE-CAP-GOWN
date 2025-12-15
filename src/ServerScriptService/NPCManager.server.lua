@@ -69,6 +69,10 @@ local function setupNPC(npcModel, npcData, npcName)
 	prompt.Triggered:Connect(function(player)
 		print("🗨️ Player " .. player.Name .. " berbicara dengan " .. displayName)
 		
+		-- Update quest objective "TalkTo" untuk NPC ini
+		local QuestSystem = require(ReplicatedStorage.Modules.Core.QuestSystem)
+		QuestSystem.UpdateObjectiveByTarget(player, "TalkTo", npcName)
+		
 		-- Tentukan dialogue category berdasarkan relationship (untuk sekarang pakai FirstMeet atau random)
 		local PlayerData = require(ReplicatedStorage.Modules.Core.PlayerData)
 		local data = PlayerData.Get(player)

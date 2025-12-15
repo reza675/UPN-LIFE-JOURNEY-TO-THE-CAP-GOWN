@@ -50,6 +50,12 @@ function QuestSystem.StartQuest(player, questId)
 	
 	print("📜 Quest Dimulai: " .. questId .. " pada " .. dateString .. " jam " .. timeString)
 
+	-- Send notification to client
+	local QuestRemote = game:GetService("ReplicatedStorage"):FindFirstChild("QuestRemote")
+	if QuestRemote then
+		QuestRemote:FireClient(player, "QuestStarted", questId)
+	end
+
 	return true
 end
 
@@ -98,7 +104,62 @@ function QuestSystem.UpdateObjective(player, questId, objectiveIndex)
 		QuestRemote:FireClient(player, "ObjectiveUpdated", questId, objectiveIndex)
 	end
 	
+	-- Check if all objectives completed
+	local MainQuest = require(ReplicatedStorage.Modules.Quests.MainQuest)
+	local questInfo = MainQuest.Quests[questId]
+	
+	if questInfo and questInfo.Objectives then
+		local allComplete = true
+		for i = 1, #questInfo.Objectives do
+			if not quest.Objectives[i] then
+				allComplete = false
+				break
+			end
+		end
+		
+		if allComplete then
+			print("🎉 All objectives complete! Auto-completing quest: " .. questId)
+			QuestSystem.CompleteQuest(player, questId)
+		end
+	end
+	
 	return true
+end
+
+-- Update objective berdasarkan Type dan Target (untuk auto-trigger)
+function QuestSystem.UpdateObjectiveByTarget(player, objectiveType, targetName)
+	local MainQuest = require(ReplicatedStorage.Modules.Quests.MainQuest)
+	local playerQuests = activeQuests[player.UserId] or {}
+	
+	-- Loop semua active quest
+	for questId, questData in pairs(playerQuests) do
+		if questData.Status == "Active" then
+			local questInfo = MainQuest.Quests[questId]
+			if questInfo and questInfo.Objectives then
+				-- Loop objectives
+				for i, objective in ipairs(questInfo.Objectives) do
+					-- Cek apakah objective match dengan type dan target
+					if objective.Type == objectiveType and objective.Target == targetName then
+						-- Cek apakah objective sebelumnya sudah selesai (urutan)
+						local canUpdate = true
+						if i > 1 then
+							-- Harus complete objective sebelumnya dulu
+							if not questData.Objectives[i - 1] then
+								canUpdate = false
+								print("⚠️ Cannot update objective " .. i .. " - previous objectives not complete!")
+							end
+						end
+						
+						-- Update objective ini jika urutan sudah benar
+						if canUpdate and not questData.Objectives[i] then
+							QuestSystem.UpdateObjective(player, questId, i)
+							print("🎯 Auto-updated objective: " .. objectiveType .. " - " .. targetName)
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 -- Check apakah objective sudah selesai
@@ -131,6 +192,25 @@ function QuestSystem.CompleteQuest(player, questId)
 		playerQuests[questId].CompletionDate = dateString
 		playerQuests[questId].Duration = string.format("%d menit %d detik", minutes, seconds)
 		
+		-- Apply rewards
+		local MainQuest = require(ReplicatedStorage.Modules.Quests.MainQuest)
+		local questData = MainQuest.Quests[questId]
+		
+		if questData and questData.Rewards and data then
+			if questData.Rewards.IPK then
+				PlayerData.UpdateIPK(player, questData.Rewards.IPK)
+				print("📈 IPK naik: +" .. questData.Rewards.IPK .. " → Total: " .. data.IPK)
+			end
+			if questData.Rewards.Reputation then
+				data.Reputation = (data.Reputation or 0) + questData.Rewards.Reputation
+				print("⭐ Reputation naik: +" .. questData.Rewards.Reputation)
+			end
+			if questData.Rewards.Money then
+				data.Money = (data.Money or 0) + questData.Rewards.Money
+				print("💰 Money: +" .. questData.Rewards.Money)
+			end
+		end
+		
 		-- Update PlayerData
 		if data then
 			data.CompletedQuests[questId] = true
@@ -143,6 +223,12 @@ function QuestSystem.CompleteQuest(player, questId)
 		print("🎉 Quest Selesai: " .. questId)
 		print("⏱️ Waktu selesai: " .. dateString .. " jam " .. timeString)
 		print("⌛ Durasi pengerjaan: " .. playerQuests[questId].Duration)
+		
+		-- Send completion notification to client with rewards
+		local QuestRemote = game:GetService("ReplicatedStorage"):FindFirstChild("QuestRemote")
+		if QuestRemote then
+			QuestRemote:FireClient(player, "QuestCompleted", questId, questData and questData.Rewards or nil)
+		end
 		
 		playerQuests[questId] = nil
 		

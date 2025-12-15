@@ -15,7 +15,7 @@ local ZONE_QUEST_MAP = {
 		{ QuestId = "SideQuest_Horror_Mystery", ObjectiveIndex = 2 }
 	},
 	Perpustakaan = {
-		{ QuestId = "Bab1_Intro_PKKBN", ObjectiveIndex = 1 },
+		{ QuestId = "Bab1_Intro_PKKBN", ObjectiveIndex = 2 }, -- Complete PKKBN setelah bicara PakEdo
 		{ QuestId = "MainQuest_StudyTime", ObjectiveIndex = 1 }
 	},
 	RuangKelas = {

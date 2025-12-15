@@ -13,8 +13,10 @@ local DEFAULT_DATA = {
 	Reputation = 50,       
 	Money = 50000,         
 	CurrentStory = "Intro",
-	Inventory = {},        
+	Inventory = {},
+	ActiveQuests = {},     -- Track active quests
 	CompletedQuests = {},
+	NPCRelationships = {}, -- Track relationship dengan NPC
 	StoryChoices = {},     -- Track player kalau ada branching story
 	LastPlayed = os.time()
 }

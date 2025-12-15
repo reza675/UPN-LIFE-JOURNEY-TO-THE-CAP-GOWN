@@ -55,6 +55,17 @@ print("✅ Semua sistem core berhasil diinisialisasi!")
 Players.PlayerAdded:Connect(function(player)
 	print("👤 Player joined: " .. player.Name)
 	PlayerData.Init(player)
+	
+	-- Auto-start first quest setelah 2 detik
+	task.wait(2)
+	local data = PlayerData.Get(player)
+	if data then
+		-- Cek apakah quest pertama belum ada
+		if not data.ActiveQuests["Bab1_Intro_PKKBN"] and not data.CompletedQuests["Bab1_Intro_PKKBN"] then
+			print("📜 Auto-starting first quest for " .. player.Name)
+			QuestSystem.StartQuest(player, "Bab1_Intro_PKKBN")
+		end
+	end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
